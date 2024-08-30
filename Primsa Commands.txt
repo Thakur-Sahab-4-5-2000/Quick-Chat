@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id         Int         @id @default(autoincrement()) // Unique identifier for the User
+  name       String      @db.VarChar(191)              // User's name with a maximum length of 191 characters
+  email      String      @unique                        // Unique email address for the User
+  image      String?     // Optional image URL or path
+  created_at DateTime    @default(now())                // Timestamp for when the User was created
+  ChatGroup  ChatGroup[] // One-to-many relationship: A User can have multiple ChatGroups
+
+  @@map("users")          // Maps the model to the "users" table in the database
+}
+
+model ChatGroup {
+  id         String       @id @default(uuid()) @db.Uuid // Unique identifier for the ChatGroup, using UUIDs
+  user       User         @relation(fields: [user_id], references: [id], onDelete: Cascade) // Relationship with User
+  user_id    Int          // Foreign key for the User
+  title      String       @db.VarChar(191) // Title of the ChatGroup with a maximum length of 191 characters
+  passcode   String       @db.VarChar(20)  // Passcode for accessing the ChatGroup
+  created_at DateTime     @default(now())  // Timestamp for when the ChatGroup was created
+  Chats      Chats[]      // One-to-many relationship: A ChatGroup can have multiple Chats
+  GroupUsers GroupUsers[] // One-to-many relationship: A ChatGroup can have multiple GroupUsers
+
+  @@index([user_id, created_at]) // Index on user_id and created_at for performance optimization
+  @@map("chat_groups")          // Maps the model to the "chat_groups" table in the database
+}
+
+model GroupUsers {
+  id         Int       @id @default(autoincrement()) // Unique identifier for each GroupUser entry
+  group      ChatGroup @relation(fields: [group_id], references: [id], onDelete: Cascade) // Relationship with ChatGroup
+  group_id   String    @db.Uuid // Foreign key referencing the ChatGroup
+  name       String    // Name of the user in the group
+  created_at DateTime  @default(now()) // Timestamp for when the GroupUser entry was created
+
+  @@map("group_users") // Maps the Prisma model to the "group_users" table in the database
+}
+
+model Chats {
+  id         String    @id @default(uuid()) // Unique identifier for each chat entry, using UUIDs
+  group      ChatGroup @relation(fields: [group_id], references: [id], onDelete: Cascade) // Relationship with ChatGroup
+  group_id   String    @db.Uuid // Foreign key referencing the ChatGroup
+  message    String?   // Optional field for the chat message text
+  name       String    // Name associated with the chat message (e.g., sender's name)
+  file       String?   // Optional field for a file URL or path related to the chat message
+  created_at DateTime  @default(now()) // Timestamp for when the chat entry was created
+
+  @@index([created_at]) // Index on created_at for performance optimization on date-based queries
+  @@map("chats") // Maps the Prisma model to the "chats" table in the database
+}

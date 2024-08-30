@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int         @id @default(autoincrement())
+  email     String      @unique @db.VarChar(200)
+  username  String      @unique @db.VarChar(60)
+  password  String
+  image     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  deletedAt DateTime?
+  chatGroup ChatGroup[]
+  chats     Chat[]
+
+  @@map("users")
+}
+
+model ChatGroup {
+  id         String      @id @default(uuid()) @db.Uuid
+  userId     Int
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String      @db.VarChar(120)
+  passcode   String      @db.VarChar(200)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  deletedAt  DateTime
+  groupUsers GroupUser[]
+  chats      Chat[]
+
+  @@index([userId, createdAt])
+  @@map("chat_groups")
+}
+
+model GroupUser {
+  id        Int       @id @default(autoincrement())
+  groupId   String    @db.Uuid
+  group     ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("group_users")
+}
+
+model Chat {
+  id        String    @id @default(uuid()) @db.Uuid
+  groupId   String    @db.Uuid
+  group     ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  file      String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([createdAt])
+  @@map("chats")
+}
+
+model PrismaLog {
+  id        Int      @id @default(autoincrement())
+  level     String
+  message   String
+  ipAddress String
+  username  String
+  timestamp DateTime @default(now())
+}
