@@ -2,7 +2,7 @@
   "name": "quick-chat",
   "version": "1.0.0",
   "description": "Scaleable Chat application using nodejs express nodemon prism supabase redis kafka docker",
-  "main": "index.js",
+  "main": "src/index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

@@ -7,7 +7,7 @@ const prisma = new PrismaClient({
 
 let isLogging = false;
 
-async function saveLog(level, message, ipAddress, username) {
+async function saveLog(level, message, ipAddress, username, path) {
   if (isLogging) return;
 
   isLogging = true;
