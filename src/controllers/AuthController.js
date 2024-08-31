@@ -5,13 +5,13 @@ import {
   ensureDirectoryExists,
   normalizeRequestData,
 } from "../utils/sendResponse.js";
-import { imageValidator } from "../utils/helper.js";
 import { prisma } from "../config/prisma.js";
 import jwt from "jsonwebtoken";
 import { IncomingForm } from "formidable";
 import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcrypt";
+import { imageValidator } from "../utils/helper.js";
 
 // Convert __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -37,7 +37,7 @@ const login = async (req, res) => {
       { expiresIn: "10h" }
     );
 
-    return sendResponse(res, authControllerResponseMessage.login.success, {
+    return sendResponse(res, 200, authControllerResponseMessage.login.success, {
       token,
     });
   } catch (error) {
@@ -131,7 +131,9 @@ const registeration = async (req, res) => {
 };
 
 const refreshToken = async (req, res) => {
-  const { refreshToken } = req.body;
+  console.log("req.user", req.user);
+  const refreshToken = req.headers.authorization || req.headers.Authorization;
+  const ip = req.ip || req.connection.remoteAddress;
 
   if (!refreshToken) {
     return sendResponse(
@@ -141,14 +143,14 @@ const refreshToken = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     const user = await prisma.user.findUnique({
-      where: { email: decoded.email },
+      where: { email: req.user.email },
     });
 
     if (!user) {
       return sendResponse(
         res,
+        401,
         authControllerResponseMessage.refreshToken.failure.invalidToken
       );
     }
@@ -161,11 +163,12 @@ const refreshToken = async (req, res) => {
 
     return sendResponse(
       res,
+      200,
       authControllerResponseMessage.refreshToken.success,
       { accessToken: newAccessToken }
     );
   } catch (error) {
-    return handleError(res, error, ip, email, 500);
+    return handleError(res, error, ip, req.user);
   }
 };
 

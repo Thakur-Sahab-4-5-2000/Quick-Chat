@@ -3,6 +3,6 @@ import { refreshToken } from "../controllers/AuthController.js";
 
 const route = Router();
 
-route.post("/", refreshToken);
+route.get("/", refreshToken);
 
 export default route;

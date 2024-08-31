@@ -1,6 +1,7 @@
 import { Router } from "express";
 import authRoute from "./auth.route.js";
 import refreshTokenRoute from "./refreshToken.route.js";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = Router();
 const unprotectedRoute = [
@@ -18,7 +19,7 @@ const protectedRoutes = [
 ];
 
 protectedRoutes.forEach((route) => {
-  router.use(route.path, route.route);
+  router.use(route.path, authMiddleware, route.route);
 });
 
 unprotectedRoute.forEach((route) => {
