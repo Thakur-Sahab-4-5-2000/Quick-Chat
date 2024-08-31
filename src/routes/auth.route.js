@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { loginSchema, schemaValidator,registerationSchema } from "../validators/index.js";
+import { loginSchema, schemaValidator,registrationSchema } from "../validators/index.js";
 import {
   login,
   registeration,
@@ -7,6 +7,6 @@ import {
 const route = Router();
 
 route.post("/login", schemaValidator(loginSchema), login);
-route.post("/register", schemaValidator(registerationSchema), registeration);
+route.post("/register", schemaValidator(registrationSchema), registeration);
 
 export default route;

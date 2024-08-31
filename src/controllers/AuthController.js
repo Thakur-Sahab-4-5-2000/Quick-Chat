@@ -1,122 +1,138 @@
-import { genSalt } from "bcrypt";
 import { authControllerResponseMessage } from "../response message/index.js";
-import sendResponse from "../utils/sendResponse.js";
+import {
+  sendResponse,
+  handleError,
+  ensureDirectoryExists,
+  normalizeRequestData,
+} from "../utils/sendResponse.js";
 import { imageValidator } from "../utils/helper.js";
-import { prisma, saveLog } from "../config/prisma.js";
+import { prisma } from "../config/prisma.js";
 import jwt from "jsonwebtoken";
+import { IncomingForm } from "formidable";
+import path from "path";
+import { fileURLToPath } from "url";
+import bcrypt from "bcrypt";
+
+// Convert __dirname for ES Modules
+const __filename = fileURLToPath(import.meta.url);
 
 const login = async (req, res) => {
   const { email, password } = req.body;
   const ip = req.ip || req.connection.remoteAddress;
 
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return sendResponse(
         res,
+        401,
         authControllerResponseMessage.login.failure.invalidCredentials
       );
     }
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return sendResponse(
-        res,
-        authControllerResponseMessage.login.failure.invalidCredentials
-      );
-    }
-    const payloadData = {
-      username,
-      email,
-      image,
-    };
 
-    const token = jwt.sign(payloadData, process.env.JWT_SECRET, {
-      expiresIn: "10h",
-    });
-    return sendResponse(
-      res,
-      authControllerResponseMessage.login.success,
-      token
+    const token = jwt.sign(
+      { username: user.username, email: user.email, image: user.image },
+      process.env.JWT_SECRET,
+      { expiresIn: "10h" }
     );
+
+    return sendResponse(res, 200, authControllerResponseMessage.login.success, {
+      token,
+    });
   } catch (error) {
-    saveLog(
-      "error",
+    return handleError(
+      res,
       authControllerResponseMessage.login.failure.general,
       ip,
-      req?.user
-    );
-    return sendResponse(
-      res,
-      authControllerResponseMessage.login.failure.general
+      httpStatus.INTERNAL_SERVER_ERROR
     );
   }
 };
-
 const registeration = async (req, res) => {
-  const { email, username, password } = req.body;
   const ip = req.ip || req.connection.remoteAddress;
-  try {
-    const user = await prisma.User.findUnique({
-      where: {
-        OR: [{ email }, { username }],
-      },
-    });
-    if (user.email === email) {
-      return sendResponse(
-        res,
-        authControllerResponseMessage.registration.failure.emailExists
-      );
-    } else if (user.username === username) {
-      return sendResponse(
-        res,
-        authControllerResponseMessage.registration.failure.usernameExists
-      );
-    }
-    const salt = await genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
 
-    if (!req.files || Object.keys(req.files).length === 0) {
-      return res
-        .status(400)
-        .json({ status: 400, message: "Profile image is required." });
+  const uploadDir = path.resolve(process.cwd(), "public/images");
+
+  ensureDirectoryExists(uploadDir);
+
+  const form = new IncomingForm({
+    uploadDir,
+    keepExtensions: true,
+    multiples: true,
+    maxFileSize: 10 * 1024 * 1024,
+  });
+
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      return sendResponse(res, 500, "Error parsing form data");
     }
 
-    const profile = req.files.profile;
-    const message = imageValidator(profile?.size, profile.mimetype);
-    if (message !== null) {
-      return res.status(400).json({
-        errors: {
-          profile: message,
+    const normalizedFields = normalizeRequestData(fields);
+    const { email, username, password } = normalizedFields;
+
+    try {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: email ? { equals: email } : undefined },
+            { username: username ? { equals: username } : undefined },
+          ],
         },
       });
+
+      if (existingUser) {
+        const errorMessage =
+          existingUser.email === email
+            ? authControllerResponseMessage.registration.failure.emailExists
+            : authControllerResponseMessage.registration.failure.usernameExists;
+        return sendResponse(res, 401, errorMessage);
+      }
+
+      if (!files.profile) {
+        return sendResponse(res, 400, "Profile image is required.");
+      }
+
+      const profileImage = Array.isArray(files.profile)
+        ? files.profile[0]
+        : files.profile;
+
+      if (!profileImage || !profileImage.originalFilename) {
+        return sendResponse(res, 400, "Profile image is required.");
+      }
+
+      // Optional: Validate image size and type
+      // const validationMessage = imageValidator(profileImage.size, profileImage.mimetype);
+      // if (validationMessage) {
+      //   return sendResponse(res, 400, { errors: { profile: validationMessage } });
+      // }
+
+      const imageName = profileImage.originalFilename;
+
+      const hashedPassword = await bcrypt.hash(
+        password,
+        await bcrypt.genSalt(10)
+      );
+
+      await prisma.user.create({
+        data: {
+          email,
+          username,
+          password: hashedPassword,
+          image: imageName,
+          updatedAt: new Date(),
+        },
+      });
+
+      return sendResponse(
+        res,
+        200,
+        authControllerResponseMessage.registration.success
+      );
+    } catch (error) {
+      return handleError(res, error, ip, req.user);
     }
-
-    const imageName = uploadImage(profile);
-
-    await prisma.user.create({
-      data: {
-        email,
-        username,
-        password: hashedPassword,
-        image: imageName,
-        updatedAt: new Date(),
-      },
-    });
-  } catch (err) {
-    saveLog(
-      "error",
-      authControllerResponseMessage.registration.failure.general,
-      ip,
-      req?.user
-    );
-    return sendResponse(
-      res,
-      authControllerResponseMessage.registration.failure.general
-    );
-  }
+  });
 };
 
 const refreshToken = async (req, res) => {
@@ -131,7 +147,6 @@ const refreshToken = async (req, res) => {
 
   try {
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
-
     const user = await prisma.user.findUnique({
       where: { email: decoded.email },
     });

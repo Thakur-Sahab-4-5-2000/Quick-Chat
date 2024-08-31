@@ -1,3 +1,11 @@
-node_modules
+# Ignore the public folder
+/public
+
+# Ignore Prisma migrations
+/prisma/migrations
+
 # Keep environment variables out of version control
 .env
+
+# Ignore node_modules
+/node_modules

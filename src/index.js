@@ -3,6 +3,12 @@ import cors from "cors";
 import "dotenv/config";
 import { logMiddleware } from "./middlewares/logMiddleware.js";
 import Routes from "./routes/index.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the directory name
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 8000;
@@ -31,7 +37,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(logMiddleware);
 
 // Serve static files from the "public/images" directory
-app.use(express.static("public/images/"));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Mount routes
 app.use("/api", Routes);
