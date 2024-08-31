@@ -8,8 +8,6 @@ const prisma = new PrismaClient({
 let isLogging = false;
 
 async function saveLog(level, message, ipAddress, username, route) {
-  if (isLogging) return;
-
   isLogging = true;
 
   try {
@@ -22,6 +20,7 @@ async function saveLog(level, message, ipAddress, username, route) {
         route,
       },
     });
+    console.log("Log saved successfully");
   } catch (error) {
     console.error("Failed to save log:", error);
   } finally {
@@ -29,34 +28,34 @@ async function saveLog(level, message, ipAddress, username, route) {
   }
 }
 
-prisma.$on("query", async (e) => {
-  try {
-    if (!isLogging) {
-      await saveLog("query", e.query, getSystemIPAddress(), "N/A", "N/A");
-    }
-  } catch (error) {
-    console.error("Error logging query:", error);
-  }
-});
+// prisma.$on("query", async (e) => {
+//   try {
+//     if (!isLogging) {
+//       await saveLog("query", e.query, getSystemIPAddress(), "N/A", "N/A");
+//     }
+//   } catch (error) {
+//     console.error("Error logging query:", error);
+//   }
+// });
 
-prisma.$on("error", async (e) => {
-  try {
-    if (!isLogging) {
-      await saveLog("error", e.message, getSystemIPAddress(), "N/A", "N/A");
-    }
-  } catch (error) {
-    console.error("Error logging error:", error);
-  }
-});
+// prisma.$on("error", async (e) => {
+//   try {
+//     if (!isLogging) {
+//       await saveLog("error", e.message, getSystemIPAddress(), "N/A", "N/A");
+//     }
+//   } catch (error) {
+//     console.error("Error logging error:", error);
+//   }
+// });
 
-prisma.$on("warn", async (e) => {
-  try {
-    if (!isLogging) {
-      await saveLog("warn", e.message, getSystemIPAddress(), "N/A", "N/A");
-    }
-  } catch (error) {
-    console.error("Error logging warning:", error);
-  }
-});
+// prisma.$on("warn", async (e) => {
+//   try {
+//     if (!isLogging) {
+//       await saveLog("warn", e.message, getSystemIPAddress(), "N/A", "N/A");
+//     }
+//   } catch (error) {
+//     console.error("Error logging warning:", error);
+//   }
+// });
 
 export { prisma, saveLog };

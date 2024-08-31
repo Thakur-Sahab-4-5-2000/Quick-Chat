@@ -5,9 +5,21 @@ const sendResponse = (res, status, message, data = null) => {
   return res.status(status).json({ message, data });
 };
 
-const handleError = (res, message, ip, user = null) => {
-  saveLog("error", message, ip, user);
-  return sendResponse(res, 500, message);
+const handleError = async (res, message, ip, user = null, route = null) => {
+  console.log("Handling error:", { message, ip, user, route });
+
+  try {
+    const errorMessage =
+      typeof message === "string" ? message : message.message;
+    console.log("Logging error message:", errorMessage);
+
+    await saveLog("error", errorMessage, ip, user, route);
+  } catch (logError) {
+    console.error("Failed to save log:", logError);
+  } finally {
+    console.log("Sending response with status 500");
+    return sendResponse(res, 500, message);
+  }
 };
 
 const ensureDirectoryExists = (dirPath) => {
@@ -27,4 +39,9 @@ function normalizeRequestData(fields) {
   return normalizedFields;
 }
 
-export { sendResponse, handleError, ensureDirectoryExists ,normalizeRequestData};
+export {
+  sendResponse,
+  handleError,
+  ensureDirectoryExists,
+  normalizeRequestData,
+};

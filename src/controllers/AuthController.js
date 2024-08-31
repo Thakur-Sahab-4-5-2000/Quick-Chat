@@ -37,16 +37,11 @@ const login = async (req, res) => {
       { expiresIn: "10h" }
     );
 
-    return sendResponse(res, 200, authControllerResponseMessage.login.success, {
+    return sendResponse(res, authControllerResponseMessage.login.success, {
       token,
     });
   } catch (error) {
-    return handleError(
-      res,
-      authControllerResponseMessage.login.failure.general,
-      ip,
-      httpStatus.INTERNAL_SERVER_ERROR
-    );
+    return handleError(res, error, ip, email, 500);
   }
 };
 const registeration = async (req, res) => {
@@ -170,10 +165,7 @@ const refreshToken = async (req, res) => {
       { accessToken: newAccessToken }
     );
   } catch (error) {
-    return sendResponse(
-      res,
-      authControllerResponseMessage.refreshToken.failure.general
-    );
+    return handleError(res, error, ip, email, 500);
   }
 };
 
