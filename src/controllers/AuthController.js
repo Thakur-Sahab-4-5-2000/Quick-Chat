@@ -1,4 +1,4 @@
-import { authControllerResponseMessage } from "../response message/index.js";
+import { authControllerResponseMessage } from "../responses/index.js";
 import {
   sendResponse,
   handleError,
@@ -32,7 +32,12 @@ const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { username: user.username, email: user.email, image: user.image },
+      {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        image: user.image,
+      },
       process.env.JWT_SECRET,
       { expiresIn: "10h" }
     );

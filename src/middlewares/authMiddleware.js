@@ -5,14 +5,13 @@ const authMiddleware = (req, res, next) => {
   const token = req.headers.authorization || req.headers.Authorization;
   const ip = req.ip || req.connection.remoteAddress;
 
-  console.log("Received token:", token); // Debugging line
-
   try {
     if (!token || token.trim() === "") {
       return sendResponse(res, 401, "Please provide a valid token");
     }
 
     const tokenParts = token.split(" ");
+
     if (tokenParts.length !== 2 || tokenParts[0] !== "Bearer") {
       return sendResponse(res, 401, "Token format is incorrect");
     }
@@ -26,11 +25,11 @@ const authMiddleware = (req, res, next) => {
       }
 
       req.user = decoded;
-      console.log("req.user:", req.user); 
+      console.log("req.user:", req.user);
       next();
     });
   } catch (error) {
-    console.error("Middleware Error:", error); // Debugging line
+    console.error("Middleware Error:", error);
     handleError(res, error, ip, req.user, req.originalUrl);
   }
 };
