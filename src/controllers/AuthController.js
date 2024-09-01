@@ -4,6 +4,7 @@ import {
   handleError,
   ensureDirectoryExists,
   normalizeRequestData,
+  generateRandomNum,
 } from "../utils/sendResponse.js";
 import { prisma } from "../config/prisma.js";
 import jwt from "jsonwebtoken";
@@ -12,6 +13,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import bcrypt from "bcrypt";
 import { imageValidator } from "../utils/helper.js";
+import { emailQueue, emailQueueName } from "../jobs/sendEmail.js";
+import generateEmailRegisterTemplate from "../emailTemplates/emailRegisteration.js";
 
 // Convert __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
@@ -100,14 +103,15 @@ const registeration = async (req, res) => {
       if (!profileImage || !profileImage.originalFilename) {
         return sendResponse(res, 400, "Profile image is required.");
       }
+      console.log("profile name",profileImage.originalFilename);
 
       // Optional: Validate image size and type
       // const validationMessage = imageValidator(profileImage.size, profileImage.mimetype);
       // if (validationMessage) {
       //   return sendResponse(res, 400, { errors: { profile: validationMessage } });
       // }
-
-      const imageName = profileImage.originalFilename;
+      const imgExt = profileImage?.originalFilename.split(".");
+      const imageName = generateRandomNum() + "." + imgExt[1];
 
       const hashedPassword = await bcrypt.hash(
         password,
@@ -123,6 +127,16 @@ const registeration = async (req, res) => {
           updatedAt: new Date(),
         },
       });
+
+      const payload = [
+        {
+          toEmail: email,
+          subject: `Welcome to Quick Chat, ${username}!`,
+          body: generateEmailRegisterTemplate(username),
+        },
+      ];
+
+      await emailQueue.add(emailQueueName, payload);
 
       return sendResponse(
         res,

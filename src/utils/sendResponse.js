@@ -1,4 +1,5 @@
 import fs from "fs";
+import { v4 as uuidv4 } from "uuid";
 import { saveLog } from "../config/prisma.js";
 
 const sendResponse = (res, status, message, data = null) => {
@@ -28,6 +29,10 @@ const ensureDirectoryExists = (dirPath) => {
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
+};
+
+export const generateRandomNum = () => {
+  return uuidv4();
 };
 
 function normalizeRequestData(fields) {
