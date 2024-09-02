@@ -17,7 +17,7 @@ import { emailQueue, emailQueueName } from "../jobs/sendEmail.js";
 import generateEmailRegisterTemplate from "../emailTemplates/emailRegisteration.js";
 
 // Convert __dirname for ES Modules
-const __filename = fileURLToPath(import.meta.url);
+// const __filename = fileURLToPath(import.meta.url);
 
 const login = async (req, res) => {
   const { email, password } = req.body;
@@ -103,7 +103,7 @@ const registeration = async (req, res) => {
       if (!profileImage || !profileImage.originalFilename) {
         return sendResponse(res, 400, "Profile image is required.");
       }
-      console.log("profile name",profileImage.originalFilename);
+      console.log("profile name", profileImage.originalFilename);
 
       // Optional: Validate image size and type
       // const validationMessage = imageValidator(profileImage.size, profileImage.mimetype);

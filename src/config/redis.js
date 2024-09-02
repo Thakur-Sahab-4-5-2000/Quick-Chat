@@ -14,3 +14,4 @@ export const defaultQueueConfig = {
     delay: 1000,
   },
 };
+
